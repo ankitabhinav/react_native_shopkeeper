@@ -5,10 +5,13 @@ import { name as appName } from './app.json';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RecoilRoot, } from 'recoil';
-import LoginPage from './components/LoginPage';
-import Products from './components/Products';
 import { navigationRef } from './RootNavigation';
 import FlipperAsyncStorage from 'rn-flipper-async-storage-advanced';
+import LoginPage from './components/LoginPage';
+import Products from './components/Products';
+import AddProduct from './components/Products/AddProduct';
+import Variants from './components/Variants';
+import AddVariant from './components/Variants/AddVariant';
 
 const theme = {
     ...DefaultTheme,
@@ -31,6 +34,9 @@ export default function Main() {
                     <Stack.Navigator>
                         <Stack.Screen name="Login" component={LoginPage} />
                         <Stack.Screen name="Products" component={Products} />
+                        <Stack.Screen name="Add Product" component={AddProduct} options={({ route }) => ({ title: route.params.headerTitle })}/>
+                        <Stack.Screen name="Variants" component={Variants} options={({ route }) => ({ title: route.params.headerTitle })}/>
+                        <Stack.Screen name="Add Variant" component={AddVariant} options={({ route }) => ({ title: route.params.headerTitle })} />
                     </Stack.Navigator>
                     {/* <App /> */}
                 </NavigationContainer>

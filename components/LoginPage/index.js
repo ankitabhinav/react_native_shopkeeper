@@ -5,21 +5,35 @@ import { useRecoilState } from 'recoil';
 import { userDetailAtom } from '../../recoil/atoms';
 import { _retrieveData, _storeData } from '../../utility/asyncStorage';
 import axios from 'axios';
+import { useFocusEffect } from '@react-navigation/native';
 
-const Login = ({navigation}) => {
+const Login = ({ navigation }) => {
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [userDetail, setUserDetail] = useRecoilState(userDetailAtom);
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
 
-    React.useEffect(() => {
-        console.log('useEffect--');
-        if (_retrieveData('token')) {
-            setIsLoggedIn(true);
-            return navigation.navigate('Products');
-        }
-    }, []);
+
+
+    useFocusEffect(
+        React.useCallback(() => {
+            // Do something when the screen is focused
+            console.log('useEffect--');
+            _retrieveData('token').then((data) => {
+                console.log(data + '---');
+                if (data) {
+                    setIsLoggedIn(true);
+                    return navigation.navigate('Products');
+                }
+            });
+        
+            return () => {
+                // Do something when the screen is unfocused
+                // Useful for cleanup functions
+            };
+        }, [])
+    );
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -33,11 +47,11 @@ const Login = ({navigation}) => {
     const handleLogin = async () => {
         if (email == "" || password == "") Alert.alert('Error', 'Email and Password fields are required');
         setIsLoading(true);
-    //     fetch('https://jsonplaceholder.typicode.com/todos/1')
-    //   .then(response => {
-    //     console.log(response.json())
-    // })
-    //   .then(json => console.log(json))
+        //     fetch('https://jsonplaceholder.typicode.com/todos/1')
+        //   .then(response => {
+        //     console.log(response.json())
+        // })
+        //   .then(json => console.log(json))
         try {
             const response = await axios.post('https://next-js-shopkeeper.vercel.app/api/shop-login', {
                 email: email,
@@ -83,8 +97,8 @@ const Login = ({navigation}) => {
                 </Button>
             }
             <Button mode="contained" style={style.signInBtn} onPress={() => navigation.navigate('Products')}>
-                   goto products
-                </Button>
+                goto products
+            </Button>
         </View>
     );
 };

@@ -6,7 +6,6 @@ import { userDetailAtom } from '../../recoil/atoms';
 import { _retrieveData, _storeData } from '../../utility/asyncStorage';
 import api from '../../api';
 import { useFocusEffect } from '@react-navigation/native';
-import AddProduct from './AddProduct';
 import { Modal, Portal, Button, PaperProvider } from 'react-native-paper';
 
 const Tags = ({ tags }) => (
@@ -16,16 +15,16 @@ const Tags = ({ tags }) => (
 const Item = ({ item, navigation }) => (
     <List.Item
         key={item._id}
-        title={item.name}
+        title={`${item.size} - ${item.unit}`}
         titleStyle={{ textTransform: 'capitalize' }}
-        description={<Tags tags={item.tags} />}
+        description={`Price: ${item.price} - Stock: ${item.availableQuantity}`}
         left={props => <List.Icon {...props} icon="folder" />}
         right={props =>
             <Pressable
-                onPress={() => navigation.navigate('Add Product', {
-                    product: item,
+                onPress={() => navigation.navigate('Add Variant', {
+                    variant: item,
                     mode: 'edit',
-                    headerTitle: item.name + ' - Edit'
+                    headerTitle: item.parentProduct.name + ' - Edit'
                 })}
             >
                 <List.Icon
@@ -33,35 +32,29 @@ const Item = ({ item, navigation }) => (
                     icon="book-edit" />
             </Pressable>
         }
-        onPress={() => navigation.navigate('Variants', {
-            productId: item._id,
-            headerTitle: item.name
-        })}
-        // onPress={() => navigation.navigate('Add Product', {
-        //     product: item,
-        //     mode: 'edit',
-        //     headerTitle: item.name + ' - Edit'
-        // })}
     />
 );
 
-const Products = ({ navigation }) => {
+const Variants = ({ route, navigation }) => {
+    const { productId } = route.params;
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [userDetail, setUserDetail] = useRecoilState(userDetailAtom);
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
-    const [products, setProducts] = React.useState([]);
-    const [productsCopy, setProductsCopy] = React.useState([]);
+    const [variants, setVariants] = React.useState([]);
+    const [variantsCopy, setVariantsCopy] = React.useState([]);
     const [searchQuery, setSearchQuery] = React.useState('');
 
     const onChangeSearch = (query) => {
         setSearchQuery(query);
+        console.log(query);
         if (query == '') {
-            return setProducts(productsCopy);
+            return setVariants(variantsCopy);
         } else {
-            let filteredProducts = products.filter((item) => item.name.includes(query));
-            setProducts(filteredProducts);
+            let filteredVariants = variants.filter((item) => item.size?.toString()?.includes(query));
+            console.log(filteredVariants);
+            setVariants(filteredVariants);
         }
     };
 
@@ -76,9 +69,9 @@ const Products = ({ navigation }) => {
     useFocusEffect(
         React.useCallback(() => {
             // Do something when the screen is focused
-            console.log('useEffect of products--');
+            console.log('useEffect of variants--');
 
-            fetchProducts();
+            fetchVariants();
 
             return () => {
                 // Do something when the screen is unfocused
@@ -87,16 +80,17 @@ const Products = ({ navigation }) => {
         }, [])
     );
 
-    const fetchProducts = async () => {
+    const fetchVariants = async () => {
+        if(variants.length > 0) return console.log('already fetched');
         try {
             setIsLoading(true);
-            console.log('insode fetchProducts')
-            const response = await api.get('/products');
+            console.log('inside fetchVariants')
+            const response = await api.get('/variants/' + productId);
             if (response.data.success) {
                 setIsLoading(false);
-                console.log(response.data.products.length);
-                setProducts(response.data.products);
-                setProductsCopy(response.data.products);
+                console.log(response.data.variants.length);
+                setVariants(response.data.variants);
+                setVariantsCopy(response.data.variants);
             }
             if (response?.data?.status === 'tokens expired') {
                 setIsLoading(false);
@@ -149,8 +143,9 @@ const Products = ({ navigation }) => {
                         onChangeText={onChangeSearch}
                         value={searchQuery}
                     />
+                   {/* <Text variant="headlineMedium">{variants[0].parentProduct.name}</Text> */}
                     <FlatList
-                        data={products}
+                        data={variants}
                         renderItem={({ item }) => <Item item={item} navigation={navigation} />}
                         keyExtractor={item => item._id}
                     />
@@ -159,7 +154,7 @@ const Products = ({ navigation }) => {
             <FAB
                 icon="plus"
                 style={style.fab}
-                onPress={() => navigation.navigate('Add Product')}
+                onPress={() => navigation.navigate('Add Variant', {headerTitle: variants[0].parentProduct.name, productId: productId})}
             />
         </View>
     );
@@ -167,7 +162,7 @@ const Products = ({ navigation }) => {
 
 
 
-export default Products;
+export default Variants;
 
 const style = StyleSheet.create({
     container: {
