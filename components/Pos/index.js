@@ -8,23 +8,23 @@ import api from '../../api';
 import { useFocusEffect } from '@react-navigation/native';
 import { Modal, Portal, Button, PaperProvider } from 'react-native-paper';
 
-const Tags = ({ tags }) => (
-    tags.map(item => <Chip textStyle={{ textTransform: 'capitalize' }} compact mode='outlined' >{item}</Chip>)
-);
+
 
 const Item = ({ item, navigation }) => (
     <List.Item
         key={item._id}
-        title={`${item.size} - ${item.unit}`}
+        title={item.counterName}
         titleStyle={{ textTransform: 'capitalize' }}
-        description={`Price: ${item.price} - Stock: ${item.availableQuantity}`}
+        description={
+            `${item.assignedTo.firstName} ${item.assignedTo.lastName}`
+        }
         left={props => <List.Icon {...props} icon="folder" />}
         right={props =>
             <Pressable
-                onPress={() => navigation.navigate('Add Variant', {
-                    variant: item,
+                onPress={() => navigation.navigate('Add Pos', {
+                    pos: item,
                     mode: 'edit',
-                    headerTitle: item.parentProduct.name + ' - Edit'
+                    headerTitle: item.counterName + ' - Edit'
                 })}
             >
                 <List.Icon
@@ -35,26 +35,24 @@ const Item = ({ item, navigation }) => (
     />
 );
 
-const Variants = ({ route, navigation }) => {
-    const { productId, headerTitle } = route.params;
+const Pos = ({ navigation }) => {
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [userDetail, setUserDetail] = useRecoilState(userDetailAtom);
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
-    const [variants, setVariants] = React.useState([]);
-    const [variantsCopy, setVariantsCopy] = React.useState([]);
+    const [pos, setPos] = React.useState([]);
+    const [posCopy, setEmployeesCopy] = React.useState([]);
+    const [employees, setEmployees] = React.useState([]);
     const [searchQuery, setSearchQuery] = React.useState('');
 
     const onChangeSearch = (query) => {
         setSearchQuery(query);
-        console.log(query);
         if (query == '') {
-            return setVariants(variantsCopy);
+            return setPos(posCopy);
         } else {
-            let filteredVariants = variants.filter((item) => item.size?.toString()?.includes(query));
-            console.log(filteredVariants);
-            setVariants(filteredVariants);
+            let filteredPos = pos.filter((item) => item.counterName.includes(query));
+            setPos(filteredPos);
         }
     };
 
@@ -69,9 +67,9 @@ const Variants = ({ route, navigation }) => {
     useFocusEffect(
         React.useCallback(() => {
             // Do something when the screen is focused
-            console.log('useEffect of variants--');
-
-            fetchVariants();
+            console.log('useEffect of pos');
+            getAllEmployees();
+            fetchPos();
 
             return () => {
                 // Do something when the screen is unfocused
@@ -80,17 +78,29 @@ const Variants = ({ route, navigation }) => {
         }, [])
     );
 
-    const fetchVariants = async () => {
-        if(variants.length > 0) return console.log('already fetched');
+    const getAllEmployees = async () => {
+        try {
+            const response = await api.get('/employees?isActive=true');
+            if (response.data.success) {
+                console.log(response.data);
+                return setEmployees(response.data.employees);
+            }
+        } catch (error) {
+            console.log("error");
+            return console.log(error);
+        }
+    }
+
+    const fetchPos = async () => {
         try {
             setIsLoading(true);
-            console.log('inside fetchVariants')
-            const response = await api.get('/variants/' + productId);
+            console.log('inside fetchPos')
+            const response = await api.get('/pos?isActive=true');
             if (response.data.success) {
                 setIsLoading(false);
-                console.log(response.data.variants.length);
-                setVariants(response.data.variants);
-                setVariantsCopy(response.data.variants);
+                console.log(response.data.posCounters.length);
+                setPos(response.data.posCounters);
+                setEmployeesCopy(response.data.posCounters);
             }
             if (response?.data?.status === 'tokens expired') {
                 setIsLoading(false);
@@ -143,9 +153,8 @@ const Variants = ({ route, navigation }) => {
                         onChangeText={onChangeSearch}
                         value={searchQuery}
                     />
-                   {/* <Text variant="headlineMedium">{variants[0].parentProduct.name}</Text> */}
                     <FlatList
-                        data={variants}
+                        data={pos}
                         renderItem={({ item }) => <Item item={item} navigation={navigation} />}
                         keyExtractor={item => item._id}
                     />
@@ -154,7 +163,7 @@ const Variants = ({ route, navigation }) => {
             <FAB
                 icon="plus"
                 style={style.fab}
-                onPress={() => navigation.navigate('Add Variant', {headerTitle: headerTitle, productId: productId})}
+                onPress={() => navigation.navigate('Add Pos',{headerTitle:'Add New Pos'})}
             />
         </View>
     );
@@ -162,7 +171,7 @@ const Variants = ({ route, navigation }) => {
 
 
 
-export default Variants;
+export default Pos;
 
 const style = StyleSheet.create({
     container: {

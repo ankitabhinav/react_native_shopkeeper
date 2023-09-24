@@ -109,6 +109,9 @@ const AddVariant = ({ navigation, route }) => {
 
     const handleUpdate = async () => {
         console.log('update variant called : ');
+        if (formData.barcode === '' || formData.unit === '' || formData.size === '' || formData.price === '') {
+            return Alert.alert('Error', 'Barcode, Unit, Size and Price fields are required');
+        }
         console.log({ ...formData, tags: formData.tags.split(',') });
         setSpinner(true);
         try {
