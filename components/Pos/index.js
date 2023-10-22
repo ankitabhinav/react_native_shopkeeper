@@ -6,26 +6,25 @@ import { userDetailAtom } from '../../recoil/atoms';
 import { _retrieveData, _storeData } from '../../utility/asyncStorage';
 import api from '../../api';
 import { useFocusEffect } from '@react-navigation/native';
-import AddProduct from './AddProduct';
 import { Modal, Portal, Button, PaperProvider } from 'react-native-paper';
 
-const Tags = ({ tags }) => (
-    tags.map(item => <Chip textStyle={{ textTransform: 'capitalize' }} compact mode='outlined' >{item}</Chip>)
-);
+
 
 const Item = ({ item, navigation }) => (
     <List.Item
         key={item._id}
-        title={item.name}
+        title={item.counterName}
         titleStyle={{ textTransform: 'capitalize' }}
-        description={<Tags tags={item.tags} />}
+        description={
+            `${item.assignedTo.firstName} ${item.assignedTo.lastName}`
+        }
         left={props => <List.Icon {...props} icon="folder" />}
         right={props =>
             <Pressable
-                onPress={() => navigation.navigate('Add Product', {
-                    product: item,
+                onPress={() => navigation.navigate('Add Pos', {
+                    pos: item,
                     mode: 'edit',
-                    headerTitle: item.name + ' - Edit'
+                    headerTitle: item.counterName + ' - Edit'
                 })}
             >
                 <List.Icon
@@ -33,35 +32,27 @@ const Item = ({ item, navigation }) => (
                     icon="book-edit" />
             </Pressable>
         }
-        onPress={() => navigation.navigate('Variants', {
-            productId: item._id,
-            headerTitle: item.name
-        })}
-        // onPress={() => navigation.navigate('Add Product', {
-        //     product: item,
-        //     mode: 'edit',
-        //     headerTitle: item.name + ' - Edit'
-        // })}
     />
 );
 
-const Products = ({ navigation }) => {
+const Pos = ({ navigation }) => {
     const [email, setEmail] = React.useState("");
     const [password, setPassword] = React.useState("");
     const [userDetail, setUserDetail] = useRecoilState(userDetailAtom);
     const [isLoggedIn, setIsLoggedIn] = React.useState(false);
     const [isLoading, setIsLoading] = React.useState(false);
-    const [products, setProducts] = React.useState([]);
-    const [productsCopy, setProductsCopy] = React.useState([]);
+    const [pos, setPos] = React.useState([]);
+    const [posCopy, setEmployeesCopy] = React.useState([]);
+    const [employees, setEmployees] = React.useState([]);
     const [searchQuery, setSearchQuery] = React.useState('');
 
     const onChangeSearch = (query) => {
         setSearchQuery(query);
         if (query == '') {
-            return setProducts(productsCopy);
+            return setPos(posCopy);
         } else {
-            let filteredProducts = products.filter((item) => item.name.includes(query));
-            setProducts(filteredProducts);
+            let filteredPos = pos.filter((item) => item.counterName.includes(query));
+            setPos(filteredPos);
         }
     };
 
@@ -76,9 +67,9 @@ const Products = ({ navigation }) => {
     useFocusEffect(
         React.useCallback(() => {
             // Do something when the screen is focused
-            console.log('useEffect of products--');
-
-            fetchProducts();
+            console.log('useEffect of pos');
+            getAllEmployees();
+            fetchPos();
 
             return () => {
                 // Do something when the screen is unfocused
@@ -87,16 +78,29 @@ const Products = ({ navigation }) => {
         }, [])
     );
 
-    const fetchProducts = async () => {
+    const getAllEmployees = async () => {
+        try {
+            const response = await api.get('/employees?isActive=true');
+            if (response.data.success) {
+                console.log(response.data);
+                return setEmployees(response.data.employees);
+            }
+        } catch (error) {
+            console.log("error");
+            return console.log(error);
+        }
+    }
+
+    const fetchPos = async () => {
         try {
             setIsLoading(true);
-            console.log('insode fetchProducts')
-            const response = await api.get('/products');
+            console.log('inside fetchPos')
+            const response = await api.get('/pos?isActive=true');
             if (response.data.success) {
                 setIsLoading(false);
-                console.log(response.data.products.length);
-                setProducts(response.data.products);
-                setProductsCopy(response.data.products);
+                console.log(response.data.posCounters.length);
+                setPos(response.data.posCounters);
+                setEmployeesCopy(response.data.posCounters);
             }
             if (response?.data?.status === 'tokens expired') {
                 setIsLoading(false);
@@ -150,7 +154,7 @@ const Products = ({ navigation }) => {
                         value={searchQuery}
                     />
                     <FlatList
-                        data={products}
+                        data={pos}
                         renderItem={({ item }) => <Item item={item} navigation={navigation} />}
                         keyExtractor={item => item._id}
                     />
@@ -159,7 +163,7 @@ const Products = ({ navigation }) => {
             <FAB
                 icon="plus"
                 style={style.fab}
-                onPress={() => navigation.navigate('Add Product')}
+                onPress={() => navigation.navigate('Add Pos',{headerTitle:'Add New Pos'})}
             />
         </View>
     );
@@ -167,7 +171,7 @@ const Products = ({ navigation }) => {
 
 
 
-export default Products;
+export default Pos;
 
 const style = StyleSheet.create({
     container: {
